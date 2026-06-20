@@ -4,7 +4,8 @@
   "description": "Демо-версия апгрейдера с фейковым балансом",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "echo 'Сборка не требуется'"
   },
   "dependencies": {
     "express": "^4.18.2"
