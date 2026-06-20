@@ -34,6 +34,7 @@ const ctx = canvas.getContext('2d');
 // ===== Глобальные переменные =====
 let currentBalance = 0;
 let isSpinning = false;
+let currentDrawChance = 50; // текущий шанс для отрисовки (может отличаться от слайдера)
 
 // Для онлайн-сессии
 const sessionId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
@@ -47,6 +48,9 @@ let currentAngle = 0;
 
 // ===== Колесо =====
 function drawWheel(chancePercent) {
+    if (chancePercent === undefined) {
+        chancePercent = currentDrawChance;
+    }
     const chance = Math.min(100, Math.max(0, chancePercent)) / 100;
     const winAngle = chance * 2 * Math.PI;
     const startAngle = -Math.PI / 2;
@@ -85,7 +89,7 @@ function drawWheel(chancePercent) {
     ctx.font = 'bold 20px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`${chancePercent}%`, centerX, centerY - 8);
+    ctx.fillText(`${Math.round(chancePercent)}%`, centerX, centerY - 8);
     ctx.font = '12px sans-serif';
     ctx.fillText('шанс победы', centerX, centerY + 18);
 
@@ -125,7 +129,8 @@ function drawPointer(angle) {
     ctx.stroke();
 }
 
-function spinPointer(targetAngle, callback) {
+// Анимация стрелки с фиксированным шансом
+function spinPointer(targetAngle, chance, callback) {
     const duration = 2000;
     const startTime = performance.now();
     const startAngle = currentAngle;
@@ -136,12 +141,12 @@ function spinPointer(targetAngle, callback) {
         const ease = 1 - Math.pow(1 - progress, 3);
         const angle = startAngle + (targetAngle - startAngle) * ease;
         currentAngle = angle;
-        drawWheel(Number(chanceSlider.value));
+        drawWheel(chance);
         if (progress < 1) {
             requestAnimationFrame(animate);
         } else {
             currentAngle = targetAngle;
-            drawWheel(Number(chanceSlider.value));
+            drawWheel(chance);
             if (callback) callback();
         }
     }
@@ -181,7 +186,7 @@ function updateHistory(history) {
     });
 }
 
-// ===== Онлайн-счётчик =====
+// ===== Онлайн =====
 async function joinOnline() {
     try {
         await fetch('/api/online/join', {
@@ -189,7 +194,6 @@ async function joinOnline() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sessionId })
         });
-        // Запускаем heartbeat
         heartbeatInterval = setInterval(sendHeartbeat, 15000);
     } catch (e) {
         console.error('Ошибка join:', e);
@@ -226,7 +230,6 @@ async function leaveOnline() {
     }
 }
 
-// Отправка при закрытии вкладки
 window.addEventListener('beforeunload', leaveOnline);
 
 // ===== Чат =====
@@ -248,7 +251,6 @@ function renderChatMessages(messages) {
     messages.forEach(msg => {
         const div = document.createElement('div');
         div.className = 'msg';
-        // Простая проверка, не своё ли сообщение (по имени)
         if (msg.username === chatUsername) {
             div.classList.add('self');
         }
@@ -274,14 +276,12 @@ async function sendChatMessage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: chatUsername, text })
         });
-        // После отправки обновляем сообщения
         loadChatMessages();
     } catch (e) {
         console.error('Ошибка отправки:', e);
     }
 }
 
-// Открыть/закрыть чат
 function toggleChat(show) {
     if (show === undefined) {
         chatWindow.classList.toggle('hidden');
@@ -293,7 +293,7 @@ function toggleChat(show) {
     if (!chatWindow.classList.contains('hidden')) {
         loadChatMessages();
         if (!chatPollInterval) {
-            chatPollInterval = setInterval(loadChatMessages, 5000); // опрос каждые 5 сек
+            chatPollInterval = setInterval(loadChatMessages, 5000);
         }
     } else {
         if (chatPollInterval) {
@@ -381,7 +381,10 @@ donateForm.addEventListener('submit', async (e) => {
 chanceSlider.addEventListener('input', () => {
     const val = chanceSlider.value;
     chanceValue.textContent = val;
-    drawWheel(Number(val));
+    if (!isSpinning) {
+        currentDrawChance = Number(val);
+        drawWheel();
+    }
 });
 
 betSlider.addEventListener('input', () => {
@@ -397,7 +400,7 @@ maxBetBtn.addEventListener('click', () => {
 spinBtn.addEventListener('click', async () => {
     if (isSpinning) return;
     const bet = Number(betSlider.value);
-    const chance = Number(chanceSlider.value);
+    const spinChance = Number(chanceSlider.value); // фиксируем шанс
     if (bet <= 0) {
         resultMessage.innerHTML = '❌ Ставка должна быть > 0';
         resultMessage.style.color = '#f1948a';
@@ -411,12 +414,15 @@ spinBtn.addEventListener('click', async () => {
 
     isSpinning = true;
     spinBtn.disabled = true;
+    chanceSlider.disabled = true;
+    betSlider.disabled = true;
+    maxBetBtn.disabled = true;
 
     try {
         const res = await fetch('/api/spin', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bet, chance })
+            body: JSON.stringify({ bet, chance: spinChance })
         });
         const data = await res.json();
 
@@ -425,15 +431,17 @@ spinBtn.addEventListener('click', async () => {
             resultMessage.style.color = '#f1948a';
             isSpinning = false;
             spinBtn.disabled = false;
+            chanceSlider.disabled = false;
+            betSlider.disabled = false;
+            maxBetBtn.disabled = false;
             return;
         }
 
-        // Обновляем онлайн, если пришёл
         if (data.online !== undefined) {
             onlineCountEl.textContent = data.online;
         }
 
-        const winAngle = (chance / 100) * 2 * Math.PI;
+        const winAngle = (spinChance / 100) * 2 * Math.PI;
         const startAngle = -Math.PI / 2;
         let targetSectorAngle;
         if (data.isWin) {
@@ -448,7 +456,7 @@ spinBtn.addEventListener('click', async () => {
         const extraSpins = 3 + Math.random() * 3;
         const finalAngle = targetSectorAngle + extraSpins * 2 * Math.PI;
 
-        spinPointer(finalAngle, () => {
+        spinPointer(finalAngle, spinChance, () => {
             if (data.isWin) {
                 resultMessage.innerHTML = `🎉 ВЫИГРЫШ! +${data.winAmount} (x${data.multiplier})`;
                 resultMessage.style.color = '#7ddf9a';
@@ -465,6 +473,11 @@ spinBtn.addEventListener('click', async () => {
 
             isSpinning = false;
             spinBtn.disabled = false;
+            chanceSlider.disabled = false;
+            betSlider.disabled = false;
+            maxBetBtn.disabled = false;
+            currentDrawChance = Number(chanceSlider.value);
+            drawWheel();
         });
 
     } catch (e) {
@@ -472,13 +485,17 @@ spinBtn.addEventListener('click', async () => {
         resultMessage.style.color = '#f1948a';
         isSpinning = false;
         spinBtn.disabled = false;
+        chanceSlider.disabled = false;
+        betSlider.disabled = false;
+        maxBetBtn.disabled = false;
+        currentDrawChance = Number(chanceSlider.value);
+        drawWheel();
     }
 });
 
 // ===== Инициализация =====
-drawWheel(Number(chanceSlider.value));
+currentDrawChance = Number(chanceSlider.value);
+drawWheel();
 fetchBalance();
 joinOnline();
-
-// Периодически обновлять баланс (для синхронизации с другими)
-setInterval(fetchBalance, 10000); // каждые 10 секунд
+setInterval(fetchBalance, 10000);
