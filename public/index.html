@@ -16,7 +16,7 @@
         </div>
 
         <!-- Колесо -->
-        <canvas id="wheelCanvas" width="300" height="300"></canvas>
+        <canvas id="wheelCanvas" width="320" height="320"></canvas>
 
         <!-- Ползунки -->
         <div class="slider-group">
@@ -31,15 +31,43 @@
         </div>
 
         <div class="actions">
-            <button id="depositBtn">💵 Пополнить (+случайно)</button>
+            <button id="donateBtn">💳 Донат</button>
             <button id="spinBtn">🎲 Крутить!</button>
         </div>
 
         <div id="resultMessage" class="message"></div>
 
-        <!-- История -->
         <div class="history-title">📜 Последние игры</div>
         <div id="historyList" class="history"></div>
+    </div>
+
+    <!-- Модальное окно доната -->
+    <div id="donateModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeModalBtn">&times;</span>
+            <h2>💳 Пополнить баланс</h2>
+            <form id="donateForm">
+                <div class="form-group">
+                    <label for="donateAmount">Сумма пополнения</label>
+                    <input type="number" id="donateAmount" min="1" max="100000" value="100" required>
+                </div>
+                <div class="form-group">
+                    <label for="donateMethod">Способ оплаты</label>
+                    <select id="donateMethod">
+                        <option value="card">Банковская карта</option>
+                        <option value="crypto">Криптовалюта (BTC/ETH)</option>
+                        <option value="qiwi">QIWI / ЮMoney</option>
+                        <option value="phone">Мобильный платёж</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="donatePromo">Промокод (необязательно)</label>
+                    <input type="text" id="donatePromo" placeholder="Введите промокод">
+                </div>
+                <button type="submit" id="payBtn">💵 Оплатить</button>
+                <div id="donateMessage" class="donate-message"></div>
+            </form>
+        </div>
     </div>
 
     <script src="script.js"></script>

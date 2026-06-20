@@ -50,6 +50,8 @@ canvas {
     border-radius: 50%;
     border: 4px solid #e94560;
     box-shadow: 0 0 30px rgba(233, 69, 96, 0.3);
+    max-width: 100%;
+    height: auto;
 }
 
 .slider-group {
@@ -114,20 +116,18 @@ canvas {
     transition: 0.2s;
 }
 
-#depositBtn {
-    background: #28a745;
+#donateBtn {
+    background: #007bff;
     color: white;
 }
-
-#depositBtn:hover {
-    background: #218838;
+#donateBtn:hover {
+    background: #0069d9;
 }
 
 #spinBtn {
     background: #e94560;
     color: white;
 }
-
 #spinBtn:hover {
     background: #c73652;
 }
@@ -166,3 +166,100 @@ canvas {
 }
 .history .win { color: #7ddf9a; }
 .history .lose { color: #f1948a; }
+
+/* Модальное окно */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.7);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: #16213e;
+    margin: auto;
+    padding: 30px;
+    border-radius: 30px;
+    max-width: 420px;
+    width: 90%;
+    position: relative;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+    color: #fff;
+}
+
+.close-btn {
+    position: absolute;
+    top: 12px;
+    right: 20px;
+    font-size: 32px;
+    font-weight: bold;
+    color: #aaa;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.close-btn:hover {
+    color: #fff;
+}
+
+.modal-content h2 {
+    text-align: center;
+    color: #e94560;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+.form-group label {
+    display: block;
+    font-size: 0.95rem;
+    margin-bottom: 5px;
+    color: #ccc;
+}
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #0f3460;
+    background: #0f3460;
+    color: #fff;
+    font-size: 1rem;
+    outline: none;
+    transition: 0.2s;
+}
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #e94560;
+}
+
+#payBtn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 14px;
+    width: 100%;
+    border-radius: 30px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: 0.2s;
+    margin-top: 10px;
+}
+#payBtn:hover {
+    background: #218838;
+}
+
+.donate-message {
+    margin-top: 12px;
+    font-size: 0.95rem;
+    text-align: center;
+    min-height: 25px;
+}
