@@ -8,20 +8,40 @@
 </head>
 <body>
     <div class="container">
-        <h1>⚡ Апгрейд скинов</h1>
+        <h1>🎡 Апгрейд-колесо</h1>
+
         <div class="balance-box">
-            <span>💰 Баланс:</span>
+            <span>💰 Общий баланс:</span>
             <span id="balanceDisplay">0</span>
         </div>
-        
-        <div class="actions">
-            <button id="depositBtn">💵 Пополнить (+ случайная сумма)</button>
-            <button id="upgradeBtn">🎲 Апгрейд! (Стоимость: 50)</button>
+
+        <!-- Колесо -->
+        <canvas id="wheelCanvas" width="300" height="300"></canvas>
+
+        <!-- Ползунки -->
+        <div class="slider-group">
+            <label>📊 Шанс победы: <span id="chanceValue">50</span>%</label>
+            <input type="range" id="chanceSlider" min="1" max="99" value="50">
         </div>
-        
-        <div id="message" class="message"></div>
-        <div id="history" class="history"></div>
+
+        <div class="slider-group">
+            <label>💰 Ставка: <span id="betValue">50</span></label>
+            <input type="range" id="betSlider" min="1" max="500" value="50">
+            <button id="maxBetBtn">Максимум</button>
+        </div>
+
+        <div class="actions">
+            <button id="depositBtn">💵 Пополнить (+случайно)</button>
+            <button id="spinBtn">🎲 Крутить!</button>
+        </div>
+
+        <div id="resultMessage" class="message"></div>
+
+        <!-- История -->
+        <div class="history-title">📜 Последние игры</div>
+        <div id="historyList" class="history"></div>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>
