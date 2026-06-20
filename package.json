@@ -1,0 +1,12 @@
+{
+  "name": "fake-upgrader",
+  "version": "1.0.0",
+  "description": "Демо-версия апгрейдера с фейковым балансом",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

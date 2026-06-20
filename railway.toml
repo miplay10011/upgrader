@@ -1,0 +1,10 @@
+[build]
+builder = "RAILPACK"              # Сборщик по умолчанию, можно не указывать[reference:3]
+buildCommand = "npm run build"    # Команда сборки (если она есть)[reference:4]
+
+[deploy]
+startCommand = "npm start"
+healthcheckPath = "/"             # Путь для проверки работоспособности сервера[reference:5]
+healthcheckTimeout = 300          # Таймаут проверки в секундах[reference:6]
+replicas = 1                      # Количество реплик (экземпляров) приложения[reference:7]
+restartPolicyType = "ON_FAILURE"  # Перезапуск только при падении[reference:8]

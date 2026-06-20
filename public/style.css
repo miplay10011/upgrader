@@ -1,0 +1,88 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #1a1a2e;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.container {
+    background: #16213e;
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    width: 400px;
+}
+
+h1 {
+    color: #e94560;
+    margin-bottom: 20px;
+}
+
+.balance-box {
+    background: #0f3460;
+    padding: 15px;
+    border-radius: 10px;
+    font-size: 1.5rem;
+    margin-bottom: 30px;
+}
+
+#balanceDisplay {
+    font-weight: bold;
+    color: #f5c842;
+}
+
+.actions button {
+    background: #e94560;
+    border: none;
+    color: white;
+    padding: 15px 20px;
+    margin: 10px 5px;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+    width: 45%;
+}
+
+.actions button:hover {
+    background: #c73652;
+    transform: scale(1.05);
+}
+
+#depositBtn {
+    background: #28a745;
+}
+#depositBtn:hover {
+    background: #218838;
+}
+
+.message {
+    margin-top: 20px;
+    padding: 10px;
+    border-radius: 8px;
+    min-height: 50px;
+    background: #0f3460;
+}
+
+.history {
+    margin-top: 15px;
+    max-height: 150px;
+    overflow-y: auto;
+    text-align: left;
+    font-size: 0.9rem;
+    background: #0f3460;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.history p {
+    margin: 5px 0;
+    border-bottom: 1px solid #1a1a2e;
+    padding-bottom: 5px;
+}
