@@ -34,9 +34,8 @@ const ctx = canvas.getContext('2d');
 // ===== Глобальные переменные =====
 let currentBalance = 0;
 let isSpinning = false;
-let currentDrawChance = 50; // текущий шанс для отрисовки (может отличаться от слайдера)
+let currentDrawChance = 50;
 
-// Для онлайн-сессии
 const sessionId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
 let heartbeatInterval = null;
 
@@ -53,7 +52,7 @@ function drawWheel(chancePercent) {
     }
     const chance = Math.min(100, Math.max(0, chancePercent)) / 100;
     const winAngle = chance * 2 * Math.PI;
-    const startAngle = -Math.PI / 2;
+    const startAngle = -Math.PI / 2; // 12 часов
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -96,17 +95,19 @@ function drawWheel(chancePercent) {
     drawPointer(currentAngle);
 }
 
+// ===== ИСПРАВЛЕННАЯ СТРЕЛКА (без смещения PI/2) =====
 function drawPointer(angle) {
     const pointerRadius = radius + 10;
     const tipRadius = radius + 30;
-    const baseX = centerX + pointerRadius * Math.cos(angle - Math.PI/2);
-    const baseY = centerY + pointerRadius * Math.sin(angle - Math.PI/2);
-    const tipX = centerX + tipRadius * Math.cos(angle - Math.PI/2);
-    const tipY = centerY + tipRadius * Math.sin(angle - Math.PI/2);
+    // Направление стрелки теперь точно соответствует углу angle
+    const baseX = centerX + pointerRadius * Math.cos(angle);
+    const baseY = centerY + pointerRadius * Math.sin(angle);
+    const tipX = centerX + tipRadius * Math.cos(angle);
+    const tipY = centerY + tipRadius * Math.sin(angle);
 
     ctx.beginPath();
     ctx.moveTo(tipX, tipY);
-    const perpAngle = angle;
+    const perpAngle = angle + Math.PI / 2; // перпендикуляр
     const sideOffset = 10;
     const leftX = baseX + sideOffset * Math.cos(perpAngle);
     const leftY = baseY + sideOffset * Math.sin(perpAngle);
@@ -400,7 +401,7 @@ maxBetBtn.addEventListener('click', () => {
 spinBtn.addEventListener('click', async () => {
     if (isSpinning) return;
     const bet = Number(betSlider.value);
-    const spinChance = Number(chanceSlider.value); // фиксируем шанс
+    const spinChance = Number(chanceSlider.value);
     if (bet <= 0) {
         resultMessage.innerHTML = '❌ Ставка должна быть > 0';
         resultMessage.style.color = '#f1948a';
@@ -443,16 +444,21 @@ spinBtn.addEventListener('click', async () => {
 
         const winAngle = (spinChance / 100) * 2 * Math.PI;
         const startAngle = -Math.PI / 2;
+
         let targetSectorAngle;
         if (data.isWin) {
+            // Попадаем в зелёный сектор
             const offset = Math.random() * winAngle;
             targetSectorAngle = startAngle + offset;
         } else {
+            // Попадаем в красный сектор
             const loseStart = startAngle + winAngle;
             const loseEnd = startAngle + 2 * Math.PI;
             const offset = Math.random() * (loseEnd - loseStart);
             targetSectorAngle = loseStart + offset;
         }
+
+        // Добавляем несколько полных оборотов
         const extraSpins = 3 + Math.random() * 3;
         const finalAngle = targetSectorAngle + extraSpins * 2 * Math.PI;
 
