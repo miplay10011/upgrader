@@ -43,7 +43,7 @@ let heartbeatInterval = null;
 const centerX = canvas.width / 2;
 const centerY = canvas.height / 2;
 const radius = 130;
-let currentAngle = 0; // угол стрелки (в радианах)
+let currentAngle = 0;
 
 // ===== Рисование колеса =====
 function drawWheel(chancePercent) {
@@ -52,7 +52,7 @@ function drawWheel(chancePercent) {
     }
     const chance = Math.min(100, Math.max(0, chancePercent)) / 100;
     const winAngle = chance * 2 * Math.PI;
-    const startAngle = -Math.PI / 2; // верх
+    const startAngle = -Math.PI / 2;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -95,7 +95,7 @@ function drawWheel(chancePercent) {
     drawPointer(currentAngle);
 }
 
-// ===== Стрелка (без смещения, точное направление) =====
+// ===== Стрелка (без смещения) =====
 function drawPointer(angle) {
     const pointerRadius = radius + 10;
     const tipRadius = radius + 30;
@@ -129,7 +129,35 @@ function drawPointer(angle) {
     ctx.stroke();
 }
 
-// ===== Анимация стрелки (фиксированный шанс) =====
+// ===== Вспышка результата (заливка всего круга) =====
+function flashResult(isWin, callback) {
+    const flashColor = isWin ? 'rgba(46, 204, 113, 0.6)' : 'rgba(231, 76, 60, 0.6)';
+    let count = 0;
+    const maxFlashes = 3;
+    const interval = 200;
+
+    const flashInterval = setInterval(() => {
+        if (count >= maxFlashes) {
+            clearInterval(flashInterval);
+            // Возвращаем нормальный вид
+            drawWheel(currentDrawChance);
+            if (callback) callback();
+            return;
+        }
+        // Заливаем круг
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        ctx.fillStyle = flashColor;
+        ctx.fill();
+        // Через половину интервала убираем
+        setTimeout(() => {
+            drawWheel(currentDrawChance);
+        }, interval / 2);
+        count++;
+    }, interval);
+}
+
+// ===== Анимация стрелки =====
 function spinPointer(targetAngle, chance, callback) {
     const duration = 2000;
     const startTime = performance.now();
@@ -170,37 +198,33 @@ async function fetchBalance() {
     }
 }
 
-// ===== Отрисовка истории с эффектом затухания =====
+// ===== История: только 10 записей, без скролла =====
 function updateHistory(history) {
     historyList.innerHTML = '';
     if (!history || history.length === 0) {
         historyList.innerHTML = '<p style="color:#777; text-align:center;">История пуста</p>';
         return;
     }
-    // Берём последние 20 записей
-    const last20 = history.slice(-20);
-    // Отрисовываем в обратном порядке (свежие сверху)
-    const reversed = [...last20].reverse();
+    // Берём последние 10
+    const last10 = history.slice(-10);
+    const reversed = [...last10].reverse();
 
     reversed.forEach((entry, index) => {
         const p = document.createElement('p');
         const winText = entry.isWin ? `✅ +${entry.winAmount} (x${entry.multiplier})` : `❌ -${entry.bet}`;
         p.className = entry.isWin ? 'win' : 'lose';
 
-        // Основной текст
         const textSpan = document.createElement('span');
         textSpan.textContent = `${entry.time} | ${entry.chance}% → ${winText}`;
         p.appendChild(textSpan);
 
-        // Время отдельно (для стиля)
         const timeSpan = document.createElement('span');
         timeSpan.className = 'time';
         timeSpan.textContent = entry.time;
         p.appendChild(timeSpan);
 
-        // Эффект затухания: чем старше запись (больше индекс), тем прозрачнее
-        // Индекс 0 — самая свежая, opacity 1; последняя — opacity ~0.3
-        const opacity = Math.max(0.2, 1 - (index / reversed.length) * 0.8);
+        // Эффект затухания
+        const opacity = Math.max(0.25, 1 - (index / reversed.length) * 0.75);
         p.style.opacity = opacity;
 
         historyList.appendChild(p);
@@ -417,7 +441,7 @@ maxBetBtn.addEventListener('click', () => {
     betValue.textContent = currentBalance;
 });
 
-// ===== Вращение (исправленное) =====
+// ===== Вращение с новой логикой остановки =====
 spinBtn.addEventListener('click', async () => {
     if (isSpinning) return;
     const bet = Number(betSlider.value);
@@ -462,21 +486,19 @@ spinBtn.addEventListener('click', async () => {
             onlineCountEl.textContent = data.online;
         }
 
-        // Вычисляем угол для стрелки строго по результату сервера
+        // НОВАЯ ЛОГИКА: вычисляем угол для СЕРЕДИНЫ сектора
         const winAngle = (spinChance / 100) * 2 * Math.PI;
         const startAngle = -Math.PI / 2;
 
         let targetSectorAngle;
         if (data.isWin) {
-            // Попадаем в зелёный сектор
-            const offset = Math.random() * winAngle;
-            targetSectorAngle = startAngle + offset;
+            // Середина зелёного сектора
+            targetSectorAngle = startAngle + winAngle / 2;
         } else {
-            // Попадаем в красный сектор
+            // Середина красного сектора
             const loseStart = startAngle + winAngle;
             const loseEnd = startAngle + 2 * Math.PI;
-            const offset = Math.random() * (loseEnd - loseStart);
-            targetSectorAngle = loseStart + offset;
+            targetSectorAngle = (loseStart + loseEnd) / 2;
         }
 
         // Добавляем несколько полных оборотов
@@ -485,27 +507,31 @@ spinBtn.addEventListener('click', async () => {
 
         // Запускаем анимацию
         spinPointer(finalAngle, spinChance, () => {
-            if (data.isWin) {
-                resultMessage.innerHTML = `🎉 ВЫИГРЫШ! +${data.winAmount} (x${data.multiplier})`;
-                resultMessage.style.color = '#7ddf9a';
-            } else {
-                resultMessage.innerHTML = `😞 ПРОИГРЫШ. -${bet}`;
-                resultMessage.style.color = '#f1948a';
-            }
-            currentBalance = data.newBalance;
-            balanceDisplay.textContent = currentBalance;
-            betSlider.max = currentBalance;
-            if (Number(betSlider.value) > currentBalance) betSlider.value = currentBalance;
-            betValue.textContent = betSlider.value;
-            updateHistory(data.history);
+            // После остановки стрелки показываем вспышку
+            flashResult(data.isWin, () => {
+                // После вспышки обновляем сообщение и историю
+                if (data.isWin) {
+                    resultMessage.innerHTML = `🎉 ВЫИГРЫШ! +${data.winAmount} (x${data.multiplier})`;
+                    resultMessage.style.color = '#7ddf9a';
+                } else {
+                    resultMessage.innerHTML = `😞 ПРОИГРЫШ. -${bet}`;
+                    resultMessage.style.color = '#f1948a';
+                }
+                currentBalance = data.newBalance;
+                balanceDisplay.textContent = currentBalance;
+                betSlider.max = currentBalance;
+                if (Number(betSlider.value) > currentBalance) betSlider.value = currentBalance;
+                betValue.textContent = betSlider.value;
+                updateHistory(data.history);
 
-            isSpinning = false;
-            spinBtn.disabled = false;
-            chanceSlider.disabled = false;
-            betSlider.disabled = false;
-            maxBetBtn.disabled = false;
-            currentDrawChance = Number(chanceSlider.value);
-            drawWheel();
+                isSpinning = false;
+                spinBtn.disabled = false;
+                chanceSlider.disabled = false;
+                betSlider.disabled = false;
+                maxBetBtn.disabled = false;
+                currentDrawChance = Number(chanceSlider.value);
+                drawWheel();
+            });
         });
 
     } catch (e) {
