@@ -7,40 +7,46 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="online-box">
-                <span>👥 Онлайн: <span id="onlineCount">0</span></span>
+    <div class="app-wrapper">
+        <!-- Левая колонка: история -->
+        <div class="history-sidebar">
+            <div class="history-title">📜 История игр</div>
+            <div id="historyList" class="history-list"></div>
+        </div>
+
+        <!-- Правая колонка: основной контент -->
+        <div class="main-content">
+            <div class="header">
+                <div class="online-box">
+                    <span>👥 Онлайн: <span id="onlineCount">0</span></span>
+                </div>
+                <div class="balance-box">
+                    <span>💰 Баланс: <span id="balanceDisplay">0</span></span>
+                </div>
             </div>
-            <div class="balance-box">
-                <span>💰 Баланс: <span id="balanceDisplay">0</span></span>
+
+            <h1>🎡 Апгрейд-колесо</h1>
+
+            <canvas id="wheelCanvas" width="320" height="320"></canvas>
+
+            <div class="slider-group">
+                <label>📊 Шанс победы: <span id="chanceValue">50</span>%</label>
+                <input type="range" id="chanceSlider" min="1" max="99" value="50">
             </div>
+
+            <div class="slider-group">
+                <label>💰 Ставка: <span id="betValue">50</span></label>
+                <input type="range" id="betSlider" min="1" max="500" value="50">
+                <button id="maxBetBtn">Максимум</button>
+            </div>
+
+            <div class="actions">
+                <button id="donateBtn">💳 Донат</button>
+                <button id="spinBtn">🎲 Крутить!</button>
+            </div>
+
+            <div id="resultMessage" class="message"></div>
         </div>
-
-        <h1>🎡 Апгрейд-колесо</h1>
-
-        <canvas id="wheelCanvas" width="320" height="320"></canvas>
-
-        <div class="slider-group">
-            <label>📊 Шанс победы: <span id="chanceValue">50</span>%</label>
-            <input type="range" id="chanceSlider" min="1" max="99" value="50">
-        </div>
-
-        <div class="slider-group">
-            <label>💰 Ставка: <span id="betValue">50</span></label>
-            <input type="range" id="betSlider" min="1" max="500" value="50">
-            <button id="maxBetBtn">Максимум</button>
-        </div>
-
-        <div class="actions">
-            <button id="donateBtn">💳 Донат</button>
-            <button id="spinBtn">🎲 Крутить!</button>
-        </div>
-
-        <div id="resultMessage" class="message"></div>
-
-        <div class="history-title">📜 Последние игры</div>
-        <div id="historyList" class="history"></div>
     </div>
 
     <!-- Модалка доната -->

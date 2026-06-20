@@ -43,20 +43,20 @@ let heartbeatInterval = null;
 const centerX = canvas.width / 2;
 const centerY = canvas.height / 2;
 const radius = 130;
-let currentAngle = 0;
+let currentAngle = 0; // угол стрелки (в радианах)
 
-// ===== Колесо =====
+// ===== Рисование колеса =====
 function drawWheel(chancePercent) {
     if (chancePercent === undefined) {
         chancePercent = currentDrawChance;
     }
     const chance = Math.min(100, Math.max(0, chancePercent)) / 100;
     const winAngle = chance * 2 * Math.PI;
-    const startAngle = -Math.PI / 2; // 12 часов
+    const startAngle = -Math.PI / 2; // верх
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Выигрышный сектор (зелёный)
+    // Зелёный сектор (выигрыш)
     ctx.beginPath();
     ctx.moveTo(centerX, centerY);
     ctx.arc(centerX, centerY, radius, startAngle, startAngle + winAngle);
@@ -67,7 +67,7 @@ function drawWheel(chancePercent) {
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Проигрышный сектор (красный)
+    // Красный сектор (проигрыш)
     ctx.beginPath();
     ctx.moveTo(centerX, centerY);
     ctx.arc(centerX, centerY, radius, startAngle + winAngle, startAngle + 2 * Math.PI);
@@ -95,11 +95,10 @@ function drawWheel(chancePercent) {
     drawPointer(currentAngle);
 }
 
-// ===== ИСПРАВЛЕННАЯ СТРЕЛКА (без смещения PI/2) =====
+// ===== Стрелка (без смещения, точное направление) =====
 function drawPointer(angle) {
     const pointerRadius = radius + 10;
     const tipRadius = radius + 30;
-    // Направление стрелки теперь точно соответствует углу angle
     const baseX = centerX + pointerRadius * Math.cos(angle);
     const baseY = centerY + pointerRadius * Math.sin(angle);
     const tipX = centerX + tipRadius * Math.cos(angle);
@@ -107,7 +106,7 @@ function drawPointer(angle) {
 
     ctx.beginPath();
     ctx.moveTo(tipX, tipY);
-    const perpAngle = angle + Math.PI / 2; // перпендикуляр
+    const perpAngle = angle + Math.PI / 2;
     const sideOffset = 10;
     const leftX = baseX + sideOffset * Math.cos(perpAngle);
     const leftY = baseY + sideOffset * Math.sin(perpAngle);
@@ -130,7 +129,7 @@ function drawPointer(angle) {
     ctx.stroke();
 }
 
-// Анимация стрелки с фиксированным шансом
+// ===== Анимация стрелки (фиксированный шанс) =====
 function spinPointer(targetAngle, chance, callback) {
     const duration = 2000;
     const startTime = performance.now();
@@ -154,7 +153,7 @@ function spinPointer(targetAngle, chance, callback) {
     requestAnimationFrame(animate);
 }
 
-// ===== Обновление баланса, истории и онлайна =====
+// ===== Обновление баланса, онлайна и истории =====
 async function fetchBalance() {
     try {
         const res = await fetch('/api/balance');
@@ -171,18 +170,39 @@ async function fetchBalance() {
     }
 }
 
+// ===== Отрисовка истории с эффектом затухания =====
 function updateHistory(history) {
     historyList.innerHTML = '';
     if (!history || history.length === 0) {
-        historyList.innerHTML = '<p style="color:#777;">История пуста</p>';
+        historyList.innerHTML = '<p style="color:#777; text-align:center;">История пуста</p>';
         return;
     }
-    const reversed = [...history].reverse();
-    reversed.forEach(entry => {
+    // Берём последние 20 записей
+    const last20 = history.slice(-20);
+    // Отрисовываем в обратном порядке (свежие сверху)
+    const reversed = [...last20].reverse();
+
+    reversed.forEach((entry, index) => {
         const p = document.createElement('p');
         const winText = entry.isWin ? `✅ +${entry.winAmount} (x${entry.multiplier})` : `❌ -${entry.bet}`;
         p.className = entry.isWin ? 'win' : 'lose';
-        p.textContent = `${entry.time} | Ставка: ${entry.bet}, Шанс: ${entry.chance}% → ${winText}`;
+
+        // Основной текст
+        const textSpan = document.createElement('span');
+        textSpan.textContent = `${entry.time} | ${entry.chance}% → ${winText}`;
+        p.appendChild(textSpan);
+
+        // Время отдельно (для стиля)
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'time';
+        timeSpan.textContent = entry.time;
+        p.appendChild(timeSpan);
+
+        // Эффект затухания: чем старше запись (больше индекс), тем прозрачнее
+        // Индекс 0 — самая свежая, opacity 1; последняя — opacity ~0.3
+        const opacity = Math.max(0.2, 1 - (index / reversed.length) * 0.8);
+        p.style.opacity = opacity;
+
         historyList.appendChild(p);
     });
 }
@@ -397,7 +417,7 @@ maxBetBtn.addEventListener('click', () => {
     betValue.textContent = currentBalance;
 });
 
-// ===== Вращение =====
+// ===== Вращение (исправленное) =====
 spinBtn.addEventListener('click', async () => {
     if (isSpinning) return;
     const bet = Number(betSlider.value);
@@ -442,6 +462,7 @@ spinBtn.addEventListener('click', async () => {
             onlineCountEl.textContent = data.online;
         }
 
+        // Вычисляем угол для стрелки строго по результату сервера
         const winAngle = (spinChance / 100) * 2 * Math.PI;
         const startAngle = -Math.PI / 2;
 
@@ -462,6 +483,7 @@ spinBtn.addEventListener('click', async () => {
         const extraSpins = 3 + Math.random() * 3;
         const finalAngle = targetSectorAngle + extraSpins * 2 * Math.PI;
 
+        // Запускаем анимацию
         spinPointer(finalAngle, spinChance, () => {
             if (data.isWin) {
                 resultMessage.innerHTML = `🎉 ВЫИГРЫШ! +${data.winAmount} (x${data.multiplier})`;

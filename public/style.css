@@ -15,24 +15,90 @@ body {
     padding: 20px;
 }
 
-.container {
+/* Основной контейнер — две колонки */
+.app-wrapper {
+    display: flex;
+    gap: 20px;
+    max-width: 900px;
+    width: 100%;
+    margin-top: 20px;
+}
+
+/* Левая колонка — история */
+.history-sidebar {
+    flex: 0 0 220px;
+    background: #16213e;
+    border-radius: 30px;
+    padding: 20px 15px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+    max-height: 600px;
+    display: flex;
+    flex-direction: column;
+}
+
+.history-title {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #aaa;
+    margin-bottom: 12px;
+    text-align: center;
+    border-bottom: 1px solid #1a2a4a;
+    padding-bottom: 8px;
+}
+
+.history-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-right: 4px;
+}
+
+.history-list p {
+    margin: 0;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    line-height: 1.3;
+    background: #0f3460;
+    transition: opacity 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.history-list p.win {
+    border-left-color: #2ecc71;
+}
+.history-list p.lose {
+    border-left-color: #e74c3c;
+}
+
+/* Эффект затухания для старых записей (устанавливается через JS) */
+.history-list p .time {
+    color: #888;
+    font-size: 0.65rem;
+    display: block;
+    margin-top: 2px;
+}
+
+/* Правая колонка — основной контент */
+.main-content {
+    flex: 1;
     background: #16213e;
     padding: 2rem;
     border-radius: 30px;
     box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-    max-width: 500px;
-    width: 100%;
     text-align: center;
-    margin-top: 20px;
+    min-width: 0;
 }
 
-/* Верхняя панель: онлайн и баланс */
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
 .online-box {
@@ -112,7 +178,6 @@ canvas {
     cursor: pointer;
     margin-top: 5px;
 }
-
 #maxBetBtn:hover {
     background: #218838;
 }
@@ -155,37 +220,10 @@ canvas {
     padding: 12px;
     border-radius: 15px;
     min-height: 50px;
-    margin-bottom: 15px;
     font-size: 1.1rem;
 }
 
-.history-title {
-    text-align: left;
-    font-size: 1rem;
-    font-weight: bold;
-    color: #aaa;
-    margin-bottom: 8px;
-}
-
-.history {
-    max-height: 180px;
-    overflow-y: auto;
-    background: #0f3460;
-    border-radius: 15px;
-    padding: 10px;
-    text-align: left;
-    font-size: 0.85rem;
-}
-
-.history p {
-    margin: 4px 0;
-    padding: 4px 0;
-    border-bottom: 1px solid #1a2a4a;
-}
-.history .win { color: #7ddf9a; }
-.history .lose { color: #f1948a; }
-
-/* Модальное окно доната */
+/* Модалка доната */
 .modal {
     display: none;
     position: fixed;
@@ -282,7 +320,7 @@ canvas {
     min-height: 25px;
 }
 
-/* ===== Чат-виджет ===== */
+/* Чат-виджет (без изменений) */
 #chatWidget {
     position: fixed;
     bottom: 20px;
@@ -322,9 +360,7 @@ canvas {
     margin-bottom: 10px;
     overflow: hidden;
     border: 1px solid #0f3460;
-    transition: 0.2s;
 }
-
 .chat-window.hidden {
     display: none;
 }
@@ -418,4 +454,28 @@ canvas {
 }
 .chat-input button:hover {
     background: #c73652;
+}
+
+/* Адаптивность: на маленьких экранах история сверху */
+@media (max-width: 700px) {
+    .app-wrapper {
+        flex-direction: column;
+    }
+    .history-sidebar {
+        flex: none;
+        max-height: 200px;
+        width: 100%;
+    }
+    .history-list {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 8px;
+        padding-bottom: 4px;
+    }
+    .history-list p {
+        flex: 0 0 auto;
+        min-width: 140px;
+        font-size: 0.75rem;
+    }
 }
