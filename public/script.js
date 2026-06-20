@@ -1,5 +1,6 @@
-// DOM элементы
+// ===== DOM элементы =====
 const balanceDisplay = document.getElementById('balanceDisplay');
+const onlineCountEl = document.getElementById('onlineCount');
 const chanceSlider = document.getElementById('chanceSlider');
 const chanceValue = document.getElementById('chanceValue');
 const betSlider = document.getElementById('betSlider');
@@ -10,7 +11,7 @@ const spinBtn = document.getElementById('spinBtn');
 const resultMessage = document.getElementById('resultMessage');
 const historyList = document.getElementById('historyList');
 
-// Модалка
+// Модалка доната
 const modal = document.getElementById('donateModal');
 const closeModalBtn = document.getElementById('closeModalBtn');
 const donateForm = document.getElementById('donateForm');
@@ -18,11 +19,25 @@ const donateAmount = document.getElementById('donateAmount');
 const donatePromo = document.getElementById('donatePromo');
 const donateMessage = document.getElementById('donateMessage');
 
+// Чат
+const chatToggleBtn = document.getElementById('chatToggleBtn');
+const chatWindow = document.getElementById('chatWindow');
+const chatCloseBtn = document.getElementById('chatCloseBtn');
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+const chatSendBtn = document.getElementById('chatSendBtn');
+
+// Колесо
 const canvas = document.getElementById('wheelCanvas');
 const ctx = canvas.getContext('2d');
 
+// ===== Глобальные переменные =====
 let currentBalance = 0;
 let isSpinning = false;
+
+// Для онлайн-сессии
+const sessionId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+let heartbeatInterval = null;
 
 // Параметры колеса
 const centerX = canvas.width / 2;
@@ -30,7 +45,7 @@ const centerY = canvas.height / 2;
 const radius = 130;
 let currentAngle = 0;
 
-// Рисование колеса
+// ===== Колесо =====
 function drawWheel(chancePercent) {
     const chance = Math.min(100, Math.max(0, chancePercent)) / 100;
     const winAngle = chance * 2 * Math.PI;
@@ -77,7 +92,6 @@ function drawWheel(chancePercent) {
     drawPointer(currentAngle);
 }
 
-// Стрелка
 function drawPointer(angle) {
     const pointerRadius = radius + 10;
     const tipRadius = radius + 30;
@@ -111,7 +125,6 @@ function drawPointer(angle) {
     ctx.stroke();
 }
 
-// Анимация стрелки
 function spinPointer(targetAngle, callback) {
     const duration = 2000;
     const startTime = performance.now();
@@ -135,13 +148,14 @@ function spinPointer(targetAngle, callback) {
     requestAnimationFrame(animate);
 }
 
-// === Обновление баланса и истории ===
+// ===== Обновление баланса, истории и онлайна =====
 async function fetchBalance() {
     try {
         const res = await fetch('/api/balance');
         const data = await res.json();
         currentBalance = data.balance;
         balanceDisplay.textContent = currentBalance;
+        onlineCountEl.textContent = data.online || 0;
         updateHistory(data.history);
         betSlider.max = currentBalance;
         if (Number(betSlider.value) > currentBalance) betSlider.value = currentBalance;
@@ -167,7 +181,136 @@ function updateHistory(history) {
     });
 }
 
-// === Модальное окно ===
+// ===== Онлайн-счётчик =====
+async function joinOnline() {
+    try {
+        await fetch('/api/online/join', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId })
+        });
+        // Запускаем heartbeat
+        heartbeatInterval = setInterval(sendHeartbeat, 15000);
+    } catch (e) {
+        console.error('Ошибка join:', e);
+    }
+}
+
+async function sendHeartbeat() {
+    try {
+        const res = await fetch('/api/online/heartbeat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId })
+        });
+        const data = await res.json();
+        if (data.online !== undefined) {
+            onlineCountEl.textContent = data.online;
+        }
+    } catch (e) {
+        console.error('Heartbeat error:', e);
+    }
+}
+
+async function leaveOnline() {
+    try {
+        await fetch('/api/online/leave', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId })
+        });
+    } catch (e) {}
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
+    }
+}
+
+// Отправка при закрытии вкладки
+window.addEventListener('beforeunload', leaveOnline);
+
+// ===== Чат =====
+let chatUsername = 'User' + Math.floor(Math.random() * 1000);
+let chatPollInterval = null;
+
+async function loadChatMessages() {
+    try {
+        const res = await fetch('/api/chat');
+        const data = await res.json();
+        renderChatMessages(data.messages || []);
+    } catch (e) {
+        console.error('Ошибка загрузки чата:', e);
+    }
+}
+
+function renderChatMessages(messages) {
+    chatMessages.innerHTML = '';
+    messages.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = 'msg';
+        // Простая проверка, не своё ли сообщение (по имени)
+        if (msg.username === chatUsername) {
+            div.classList.add('self');
+        }
+        div.innerHTML = `<span class="user">${escapeHtml(msg.username)}</span>${escapeHtml(msg.text)}<span class="time">${msg.time}</span>`;
+        chatMessages.appendChild(div);
+    });
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+async function sendChatMessage() {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    chatInput.value = '';
+    try {
+        await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: chatUsername, text })
+        });
+        // После отправки обновляем сообщения
+        loadChatMessages();
+    } catch (e) {
+        console.error('Ошибка отправки:', e);
+    }
+}
+
+// Открыть/закрыть чат
+function toggleChat(show) {
+    if (show === undefined) {
+        chatWindow.classList.toggle('hidden');
+    } else if (show) {
+        chatWindow.classList.remove('hidden');
+    } else {
+        chatWindow.classList.add('hidden');
+    }
+    if (!chatWindow.classList.contains('hidden')) {
+        loadChatMessages();
+        if (!chatPollInterval) {
+            chatPollInterval = setInterval(loadChatMessages, 5000); // опрос каждые 5 сек
+        }
+    } else {
+        if (chatPollInterval) {
+            clearInterval(chatPollInterval);
+            chatPollInterval = null;
+        }
+    }
+}
+
+chatToggleBtn.addEventListener('click', () => toggleChat());
+chatCloseBtn.addEventListener('click', () => toggleChat(false));
+chatSendBtn.addEventListener('click', sendChatMessage);
+chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendChatMessage();
+});
+
+// ===== Модалка доната =====
 function openModal() {
     modal.style.display = 'flex';
     donateAmount.value = 100;
@@ -179,15 +322,12 @@ function closeModal() {
     modal.style.display = 'none';
 }
 
-// Закрытие по клику вне окна
 window.addEventListener('click', (e) => {
     if (e.target === modal) closeModal();
 });
-
 closeModalBtn.addEventListener('click', closeModal);
 donateBtn.addEventListener('click', openModal);
 
-// Отправка формы доната
 donateForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const amount = parseInt(donateAmount.value);
@@ -237,7 +377,7 @@ donateForm.addEventListener('submit', async (e) => {
     }
 });
 
-// === Обработчики слайдеров ===
+// ===== Слайдеры =====
 chanceSlider.addEventListener('input', () => {
     const val = chanceSlider.value;
     chanceValue.textContent = val;
@@ -253,7 +393,7 @@ maxBetBtn.addEventListener('click', () => {
     betValue.textContent = currentBalance;
 });
 
-// === Вращение ===
+// ===== Вращение =====
 spinBtn.addEventListener('click', async () => {
     if (isSpinning) return;
     const bet = Number(betSlider.value);
@@ -288,7 +428,11 @@ spinBtn.addEventListener('click', async () => {
             return;
         }
 
-        // Целевой угол для стрелки
+        // Обновляем онлайн, если пришёл
+        if (data.online !== undefined) {
+            onlineCountEl.textContent = data.online;
+        }
+
         const winAngle = (chance / 100) * 2 * Math.PI;
         const startAngle = -Math.PI / 2;
         let targetSectorAngle;
@@ -331,6 +475,10 @@ spinBtn.addEventListener('click', async () => {
     }
 });
 
-// Инициализация
+// ===== Инициализация =====
 drawWheel(Number(chanceSlider.value));
 fetchBalance();
+joinOnline();
+
+// Периодически обновлять баланс (для синхронизации с другими)
+setInterval(fetchBalance, 10000); // каждые 10 секунд

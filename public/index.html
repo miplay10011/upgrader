@@ -8,12 +8,17 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎡 Апгрейд-колесо</h1>
-
-        <div class="balance-box">
-            <span>💰 Общий баланс:</span>
-            <span id="balanceDisplay">0</span>
+        <!-- Верхняя панель: онлайн + баланс -->
+        <div class="header">
+            <div class="online-box">
+                <span>👥 Онлайн: <span id="onlineCount">0</span></span>
+            </div>
+            <div class="balance-box">
+                <span>💰 Баланс: <span id="balanceDisplay">0</span></span>
+            </div>
         </div>
+
+        <h1>🎡 Апгрейд-колесо</h1>
 
         <!-- Колесо -->
         <canvas id="wheelCanvas" width="320" height="320"></canvas>
@@ -67,6 +72,22 @@
                 <button type="submit" id="payBtn">💵 Оплатить</button>
                 <div id="donateMessage" class="donate-message"></div>
             </form>
+        </div>
+    </div>
+
+    <!-- ===== Чат (плавающая иконка справа снизу) ===== -->
+    <div id="chatWidget">
+        <button id="chatToggleBtn" class="chat-toggle">💬</button>
+        <div id="chatWindow" class="chat-window hidden">
+            <div class="chat-header">
+                <span>💬 Чат</span>
+                <button id="chatCloseBtn" class="chat-close">✕</button>
+            </div>
+            <div id="chatMessages" class="chat-messages"></div>
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="Введите сообщение..." maxlength="200">
+                <button id="chatSendBtn">➤</button>
+            </div>
         </div>
     </div>
 
